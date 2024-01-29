@@ -1,0 +1,7 @@
+-f https://download.pytorch.org/whl/torch_stable.html
+
+torch==1.8.0+cu101
+torchvision==0.9.0+cu101
+
+#https://download.pytorch.org/whl/cu101/torch-1.8.0%2Bcu101-cp38-cp38-linux_x86_64.whl
+#torchaudio==0.8.0

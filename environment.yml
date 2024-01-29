@@ -1,0 +1,41 @@
+name: activation_sense
+channels:
+  - conda-forge
+  #- default
+  - pytorch
+  - anaconda
+  #- omgarcia
+dependencies:
+  #- gcc
+  #- libgcc
+  #- libstdcxx-ng>=9.0.0
+  - cudatoolkit=10.1
+  - jupyterlab
+  - jupyterlab_widgets
+  - ipywidgets
+  - mkl
+  - mkl-service
+  - blas=*=*mkl
+  #- lapack=*=*mkl
+  - pip
+  - python=3.8.*
+  - numpy=1.21.2
+  - scipy=1.8.0
+  - matplotlib=3.4.3
+  - SALib=1.4
+  - h5py=3.4.0
+  - kaggle=1.5.12
+  - scikit-learn=0.24.2
+  - statsmodels=0.13.2
+  - seaborn=0.12.2
+  #- pillow=8.1.0
+  #- r-base=4.1.1
+  #- rpy2
+  - pip:
+    - --requirement torch_requirements.txt
+    - opencv-python==4.5.3.56
+    #- scikit-learn==0.24.2
+    #- scikit-learn
+    #- matplotlib
+    #- SALib
+    

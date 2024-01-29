@@ -1,0 +1,14 @@
+*~*
+*.aux
+*.pdf
+*.pyc
+.ipynb_checkpoints
+*.log
+*.out
+*.toc
+*.png
+*.jpg
+*.jpeg
+*.tiff
+*.tif
+*.npz
