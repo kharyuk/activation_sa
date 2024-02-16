@@ -1,7 +1,7 @@
 # Sensitivity analysis of activations with augmented inputs
 
 This repository contains source codes and Jupyter notebooks developed under the following study:
-- *P.Kharyuk, S.Matveev, I.Oseledets.* **Exploring specialization and sensitivity of convolutional neural networks in the context of augmentations.**
+- *P.Kharyuk, S.Matveev, I.Oseledets.* **Exploring specialization and sensitivity of convolutional neural networks in the context of simultaneous augmentations.**
 
 Complementary computational results are available at the corresponding Zenodo repository:
 - https://doi.org/10.5281/zenodo.10499818
@@ -93,14 +93,14 @@ Several details regarding these files are listed in ```test/Stats.md``` file.
 
 ## Repository structure
 
-- ```data```: directory for storing dataset (will be created before downloading)
-- ```experiments```: Basic ```sh```-files for performing computational experiments.
-- ```notebook```: Jupyter notebooks storing the experimental setup and processing the results.
-- ```results```: Directory for storing computed results (will be created before computing)
+- ```data```: directory for storing dataset (will be created before downloading);
+- ```experiments```: Basic ```sh```-files for performing computational experiments;
+- ```notebook```: Jupyter notebooks storing the experimental setup and processing the results;
+- ```results```: Directory for storing computed results (will be created before computing);
     - ```results/single_unit```: A separate directory for single-channelled experiments;
     - ```results/test```: A directory to store results related to testing (test);
     - ```results/tmp```: This directory is used to keep intermediate computations before merging them into single files;
-- ```src```: ```py```-files containing the functions developed to maintain the experiments.
+- ```src```: ```py```-files containing the functions developed to maintain the experiments;
     - ```src/correlation```: utilities for performing correlation analysis;
     - ```src/data_loader```: loading ILSVRC images as a torchvision dataset;
     - ```src/discriminant_analysis```: linear discriminant analysis for predicting SA variables by their sensitivity maps;
@@ -109,6 +109,6 @@ Several details regarding these files are listed in ```test/Stats.md``` file.
     - ```src/prediction```: single-class sensitivity analysis and guided masking prediction sources (including correlations and HCA);
     - ```src/preparation```: single-channelled (HSV separated-and-multiplexed) computations;
     - ```src/sensitivity_analysis```: building sensitivity analysis problems, and computing the corresponding sensitivity values;
-- ```templates```: Templates for forming ```sh```-scripts from Jupyter notebooks to be used for submitting computational tasks.
-- ```test```: ```sh```-files configured to test computational core of the framework (
-- ```torch-models```: directory for storing pretrained models available in torch (will be created before downloading)
+- ```templates```: Templates for forming ```sh```-scripts from Jupyter notebooks to be used for submitting computational tasks;
+- ```test```: ```sh```-files configured to test computational core of the framework;
+- ```torch-models```: directory for storing pretrained models available in torch (will be created before downloading).
