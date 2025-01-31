@@ -509,6 +509,10 @@ if do_compute_activations:
                 os.remove(act_path)
 
     if (not actfnm_isin_dir) or (actfnm_isin_dir and recompute_activations):
+<<<<<<< HEAD
+    #if True:
+=======
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
         # filtered_network_leaves without the 'model_outputs', save_output_activations controls it here
         activations_paths = sensitivity_analysis.contrast.compute_activations_wrt_contrast_stats(
             sampler,
@@ -538,7 +542,10 @@ if do_compute_activations:
 #### 7. compute the contrast statistics [Wilcoxon signed rank test pvals, stats, pbscc, rbscc]
 
 #value_names = ['si+sT', 'si2']
+<<<<<<< HEAD
+=======
 
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
 if do_compute_values:
     network_module_names = list(filtered_network_leaves) #+ ['model_outputs']
 
@@ -546,6 +553,11 @@ if do_compute_values:
     cs_paths = {}
     for i_aug, aug_name in enumerate(problem['aug_names']):
         print(aug_name)
+<<<<<<< HEAD
+        #if aug_name != "hue":
+        #    continue
+=======
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
         log_fnm = f'{values_fnm_prefix}_{aug_name}_{fnm_suffix}.log'
         log_path = os.path.join(activations_dirname, log_fnm)
 
@@ -576,9 +588,17 @@ if do_compute_values:
             print(f'HDF5 file containing the activations is here: {activations_augmented_path}')
         cs_paths[aug_name] = current_cs_path
 
+<<<<<<< HEAD
+    if remove_activations_hdf5:
+=======
     if False and remove_activations_hdf5:
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
         os.remove(activations_original_path)
         print(f'HDF5 file containing the activations was removed: {activations_original_path}')
     else:
         print(f'HDF5 file containing the activations is here: {activations_original_path}')
+<<<<<<< HEAD
 print('well done!')
+=======
+print('well done!')
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558

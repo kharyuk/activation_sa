@@ -8,6 +8,10 @@ import math
 import copy
 import collections
 import logging
+<<<<<<< HEAD
+import gc
+=======
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
 
 import torch
 import torch_utils
@@ -115,7 +119,11 @@ class CustomAugParamSampler(object):
                 result[aug_name] = a
                 i_pi += 1
             samples.append(result)
+<<<<<<< HEAD
+        return tuple(samples), tuple(indices)
+=======
         return samples, indices
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
     
 def compute_pm_ranks(x, zero_method='zsplit', axis=0):
     '''
@@ -199,7 +207,11 @@ def sample_transform(
     output_batch = []
     for j in range(Nsamples):
         local_parameters = tuple(params[:, j])            
+<<<<<<< HEAD
+        local_output_batch = input_batch.detach().clone()
+=======
         local_output_batch = input_batch.clone()
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
         local_output_batch = transform(local_output_batch, *local_parameters)
         output_batch.append(local_output_batch)
     if Nsamples == 1:
@@ -280,7 +292,11 @@ def compute_activations_wrt_contrast_stats(
             if pre_processing_functions is not None:
                 sampleX = pre_processing_functions(sampleX)
             if post_processing_functions is not None:
+<<<<<<< HEAD
+                partX.append(post_processing_functions(sampleX.detach().clone()))
+=======
                 partX.append(post_processing_functions(sampleX.clone()))
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
             n_samplesX += 1
             
             for i_aug in range(Naugs):
@@ -288,7 +304,11 @@ def compute_activations_wrt_contrast_stats(
                 aug_params = sampleV[aug_name]
                 #print(aug_name, copy_sampleX.size(), sampleX.size())
                 copy_sampleX = sample_transform(
+<<<<<<< HEAD
+                    sampleX.detach().clone(), transform_functions_list[i_aug], aug_params
+=======
                     sampleX.clone(), transform_functions_list[i_aug], aug_params
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
                 )
                 #print(aug_name, copy_sampleX.size(), sampleX.size())
                 if post_processing_functions is not None:
@@ -301,11 +321,22 @@ def compute_activations_wrt_contrast_stats(
                 activations_paths[aug_name] = current_activations_path
                 if copy_sampleX.dim() == 3:
                     copy_sampleX = copy_sampleX.unsqueeze(0)
+<<<<<<< HEAD
+                predY = model(copy_sampleX.to(device), **inference_params).detach()#.numpy()
+                del copy_sampleX, predY
+                gc.collect()
+                
+            del sampleX;
+            gc.collect();
+            if (i_sample < Nsamples-1) and (n_samplesX % batch_size != 0):
+                #del sampleX
+=======
                 predY = model(copy_sampleX.to(device), **inference_params)#.detach().numpy()
                 del copy_sampleX, predY
                 
             if (i_sample < Nsamples-1) and (n_samplesX % batch_size != 0):
                 del sampleX
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
                 continue
                     
             total_samplesX += n_samplesX
@@ -314,13 +345,21 @@ def compute_activations_wrt_contrast_stats(
                 print(info_msg, end='\r')
             if log_path is not None:
                 logging.info(info_msg)
+<<<<<<< HEAD
+            partX_stack = torch.stack(partX, dim=0)
+=======
             partX = torch.stack(partX, dim=0)
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
             current_activations_path = os.path.join(
                 activations_dirname, f'{activations_basename}_original.hdf5'
             )
             #activations_paths.add(current_activations_path)
             activations_paths['original'] = current_activations_path
+<<<<<<< HEAD
+            predY = model(partX_stack.to(device), **inference_params).detach()#.numpy()
+=======
             predY = model(partX.to(device), **inference_params)#.detach().numpy()
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
             #if save_output_activations:
             #    save_activations_function(
             #        name='model_outputs',
@@ -328,8 +367,14 @@ def compute_activations_wrt_contrast_stats(
             #        inputs=None,
             #        outputs=predY
             #    )
+<<<<<<< HEAD
+            del partX_stack, predY
+            partX.clear()
+            gc.collect()
+=======
             del partX, predY
             partX = []
+>>>>>>> 82d4dcfdffdf365fc15a7ddda367fb72102ed558
             n_samplesX = 0
     torch_utils.remove_all_hooks_by_dict(handlers)
     info_msg = f'Finished.'
