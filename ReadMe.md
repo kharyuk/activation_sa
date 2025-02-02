@@ -112,4 +112,5 @@ Several details regarding these files are listed in ```test/Stats.md``` file.
     - ```src/sensitivity_analysis```: building sensitivity analysis problems, and computing the corresponding sensitivity values;
 - ```templates```: Templates for forming ```sh```-scripts from Jupyter notebooks to be used for submitting computational tasks;
 - ```test```: ```sh```-files configured to test computational core of the framework;
+- ```tools```: auxiliary scripts for post-processing the results (compressing, cleaning) + unpacking the data from the supplementary Zenodo repository
 - ```torch-models```: directory for storing pretrained models available in torch (will be created before downloading).
