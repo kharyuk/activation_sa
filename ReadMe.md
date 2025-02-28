@@ -1,7 +1,7 @@
 # Sensitivity analysis of activations with augmented inputs
 
 This repository contains source codes and Jupyter notebooks developed under the following study:
-- *P.Kharyuk, S.Matveev, I.Oseledets.* **Exploring specialization and sensitivity of convolutional neural networks in the context of simultaneous augmentations.**
+- *P.Kharyuk, S.Matveev, I.Oseledets.* **Exploring specialization and sensitivity of convolutional neural networks in the context of simultaneous image augmentations.**
 
 Complementary computational results are available at the corresponding Zenodo repository:
 - https://doi.org/10.5281/zenodo.10499818
