@@ -41,7 +41,15 @@ def getAvailableModels(family_name, verbose=True):
         print(f'Available {family_name} (from torchvision): ' + ', '.join(names))
     return names
 
-def model_loader(model_name, family_name, model_dirname, pretrained=True):
+def model_loader(
+    model_name,
+    family_name,
+    model_dirname,
+    model_filename=None,
+    num_classes=1000, # imagenet default
+    pretrained=True,
+    device="cpu"
+):
     if family_name is None:
         family_name = findModelFamily(model_name)
     else:
@@ -49,21 +57,31 @@ def model_loader(model_name, family_name, model_dirname, pretrained=True):
         names = getAvailableModels(family_name, verbose=False)
         assert model_name in names
         
-    model = getattr(models, model_name)()
+    model = getattr(models, model_name)(num_classes=num_classes)
     
     if pretrained:
-        try:
-            url = getattr(models, family_name).model_urls[model_name]
-        except:
-            url = sys.modules[
-                f'torchvision.models.{family_name}'
-            ].model_urls[model_name]
-        model_filename = url.split('/')[-1]
-        allFiles = os.listdir(model_dirname)
-        if not (model_filename in allFiles):
-            state_dict = model_zoo.load_url(url, model_dirname, progress=True)
-        else:
-            state_dict = torch.load(model_dirname+model_filename)
+        if model_filename is None:
+            try:
+                url = getattr(models, family_name).model_urls[model_name]
+            except:
+                url = sys.modules[
+                    f'torchvision.models.{family_name}'
+                ].model_urls[model_name]
+            model_filename = url.split('/')[-1]
+            allFiles = os.listdir(model_dirname)
+            if not (model_filename in allFiles):
+                state_dict = model_zoo.load_url(url, model_dirname, progress=True)
+            else:
+                state_dict = torch.load(model_dirname+model_filename, map_location=device)
+        else: # places365 fix
+            print("places365")
+            model_path = os.path.join(model_dirname, model_filename)
+            model_weights = torch.load(model_path, map_location=device)
+            state_dict = {}
+            for key, val in model_weights["state_dict"].items():
+                new_key = key.replace("module.", "")
+                state_dict[new_key] = val
+            del model_weights
         model.load_state_dict(state_dict)
         del state_dict
     return model

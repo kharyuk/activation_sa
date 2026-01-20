@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 sh_script_templates = {
@@ -9,6 +10,7 @@ def build_sh_exp_files(
     config_dict,
     script_path,
     experiment_file_path,
+    notebook_directory_offset,
     which='base',
     slurm_config_dict=None,
     slurm_path_variables_dict=None
@@ -23,7 +25,9 @@ def build_sh_exp_files(
         path_lines = [
             f'{key}="{value}"\n' for key, value in slurm_path_variables_dict.items()
         ]
-    with open(sh_script_templates[which], 'r') as f:
+    with open(
+        os.path.join(notebook_directory_offset, sh_script_templates[which]), 'r'
+    ) as f:
         sh_content = f.readlines()
         
     config_string = ' '.join(f'--{key} {value}' for key, value in config_dict.items())

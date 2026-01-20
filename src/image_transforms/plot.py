@@ -1,6 +1,7 @@
 import PIL
 import matplotlib.pyplot as plt
 
+import os
 import time
 from IPython.display import clear_output
 
@@ -86,3 +87,66 @@ def dynamic_multi_plot(dataset, wait_interval, n_cols, figsize, output_transform
             clear_output()
         except KeyboardInterrupt:
             break
+
+def sample_image_transform(
+    transformer, image, save_path, n_samples=5, figsize_vertical=5
+):
+    n_samples = min(n_samples, 99999)
+    figsize_horizontal = figsize_vertical
+
+    a = np.transpose( np.array(image), (1, 2, 0))
+    #im = PIL.Image.fromarray(a)
+    im = np.array(image)
+    im = im/im.max()
+
+    for i in range(n_samples+1):
+        fig, ax = plt.subplots(1, 1, figsize=(figsize_horizontal, figsize_vertical), frameon=False)
+
+        if i == 0:
+            ax.imshow(a, extent=[0, 1, 0, 1])
+        else:
+            t_im = transformer(torch.Tensor(im))
+            t_im = np.transpose( np.array(t_im), (1, 2, 0))
+            if t_im.max() > 1:
+                t_im = t_im.astype('i')
+            ax.imshow(np.array(t_im), extent=[0, 1, 0, 1])
+        ax.axes.xaxis.set_ticklabels([])
+        ax.axes.yaxis.set_ticklabels([])
+        ax.axes.xaxis.set_ticks([])
+        ax.axes.yaxis.set_ticks([])
+        ax.spines[:].set_visible(False)
+
+        current_path = os.path.join(save_path, f"{i:05d}.jpg")
+        fig.subplots_adjust(left=0, bottom=0, right=1, top=1, hspace=0, wspace=0)
+        plt.savefig(current_path, bbox_inches='tight', pad_inches=0)
+        plt.clf()
+        plt.close()
+        
+def save_dynamic_multi_plot(dataset, n_samples, save_path, figsize, output_transform=None):
+    n_samples = min(n_samples, 99999)
+    for i, (x, y, z) in enumerate(dataset):
+        if i == n_samples:
+            break
+        #x, y = xy
+        if output_transform is not None:
+            x = output_transform(x)
+        cx = x.detach().numpy().transpose([1, 2, 0]),
+        fig, ax = plt.subplots(1, 1, figsize=figsize, frameon=False)
+        
+        ax.imshow(np.array(cx[0]), extent=[0, 1, 0, 1])
+        ax.axes.xaxis.set_ticklabels([])
+        ax.axes.yaxis.set_ticklabels([])
+        ax.axes.xaxis.set_ticks([])
+        ax.axes.yaxis.set_ticks([])
+        ax.spines[:].set_visible(False)
+        current_path = os.path.join(save_path, f"{i:05d}.jpg")
+        #plt.axis('off')
+        fig.subplots_adjust(left=0, bottom=0, right=1, top=1, hspace=0, wspace=0)
+        #plt.tight_layout(pad=0)
+        plt.savefig(current_path, bbox_inches='tight', pad_inches=0)
+        plt.clf()
+        plt.close()
+        
+        
+        
+    

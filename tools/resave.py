@@ -112,7 +112,7 @@ def verify_structure(path1, path2):
 
 
 if __name__ == '__main__':
-    source_path = './zenodo'
-    dest_path = './zenodo_compressed'
+    source_path = '../zenodo_prod/'
+    dest_path = '../zenodo_compressed/'
     resav_dir(source_path, dest_path)
 
