@@ -3,6 +3,14 @@ import scipy.stats
 
 _corr_types = ('pearson', 'spearman')
 
+def fisher_z(values):#, eps=1e-8):
+    return np.arctanh(values)
+    #new_values = np.clip(values, -1+eps, 1-eps)
+    #return np.arctanh(new_values)
+
+def inv_fisher_z(values):
+    return np.tanh(values)
+
 def recover_triu_corr_matrix(a):
     #k*k - k - 2*a.size = 0
     d = (1 + 8*a.size)**0.5
@@ -42,7 +50,14 @@ def custom_spearmanr(a, b=None, axis=0):
 
     
 
-def compute_unitwise_correlation(val_array, val_array2=None, corr_type='spearman'):#, n_units=None):
+def compute_unitwise_correlation(
+    val_array,
+    val_array2=None,
+    corr_type='spearman',
+    ci_alpha=0.05,
+    ci_n_bootstraps=1000,
+    ci_random_state=0
+):#, n_units=None):
     '''
         val_array has the shape of (n_variables, n_units, n_pixels)
             variables = augmentation variables
@@ -74,13 +89,27 @@ def compute_unitwise_correlation(val_array, val_array2=None, corr_type='spearman
         cormat_arr[i] = tmp
         nan_mask[i] = isnan_tmp
         del tmp, isnan_tmp;
-    mean_cormat = cormat_arr.mean(axis=0)
-    if n_pixs > 1:
-        std_cormat = cormat_arr.std(axis=0, ddof=1)
-    else:
-        std_cormat = None
-    del cormat_arr;
-    return mean_cormat, std_cormat, nan_mask
+    cormat_arr = fisher_z(cormat_arr)
+    mean_cormat = inv_fisher_z(cormat_arr.mean(axis=0))
+    if n_pixs == 1:
+        del cormat_arr;
+        return mean_cormat, None, None, nan_mask
+    #std_cormat = cormat_arr.std(axis=0, ddof=1)
+    rng = np.random.default_rng(ci_random_state)
+    k_bootstrap = len(cormat_arr)
+    assert k_bootstrap == n_pixs
+    bootstrapped_means = []
+    for i_bootstrap in range(ci_n_bootstraps):
+        c_ind_bootstrap = rng.choice(k_bootstrap, size=k_bootstrap, replace=True)
+        c_mean_bootstrap = cormat_arr[c_ind_bootstrap].mean(axis=0)
+        bootstrapped_means.append(c_mean_bootstrap)
+    ci_lower = np.quantile(bootstrapped_means, q=0.5*ci_alpha, axis=0)
+    ci_upper = np.quantile(bootstrapped_means, q=1-0.5*ci_alpha, axis=0)
+    ci_lower = inv_fisher_z(ci_lower)
+    ci_upper = inv_fisher_z(ci_upper)
+    del cormat_arr, bootstrapped_means;
+    return mean_cormat, ci_lower, ci_upper, nan_mask
+    #return mean_cormat, std_cormat, nan_mask
 
 def compute_correlation_cov_aug(cov_array, aug_array, corr_type):
     '''

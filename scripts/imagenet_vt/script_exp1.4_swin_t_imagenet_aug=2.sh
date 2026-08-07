@@ -1,0 +1,6 @@
+#!/bin/bash -l
+
+export CUDA_VISIBLE_DEVICES=""
+source activate activation_sense_vt
+
+python ../experiments/1.4_shp_variance.py --batch_size_activations_computing 1000 --samples_per_class_train 732 --samples_per_class_valid 50 --data_dirname ../data/imagenet --activations_dirname ../results/ --model_dirname ../torch-models/ --model_filename swin_t-704ceda3.pth --mkl_num_threads 8 --device cpu --recompute_activations 0 --remove_activations_hdf5 0 --desired_image_height 224 --desired_image_width 224 --network_name swin_t --network_modules '["features.1", "features.3", "features.5", "features.7", "head"]' --classification_layer_name head --dataset imagenet --libstdcpp_path /mnt/bulky/pkharyuk/apd/envs/activation_sense/lib/libstdc++.so.6 --buffer_size_tv_computing 1000 --torch_seed 6722 --numpy_seed 8266 --class_sampler_seed 8292 --subset_random_state_train 9919 --subset_random_state_valid 724 --dataset_part train+valid --Njobs_tv_computing 8 --augset1_p 0.5 --augset2_p 0.5 --activations_fnm_prefix shptv_swin_t_imagenet_activations --values_fnm_prefix shptv_swin_t_imagenet_values --Nsamples 262144 --permutation_random_seed 2585 --problem_sampler_seed 814 --use_partition_variable 1 --use_permutation_variable 1 --class_selector_seed 5301 --partition_sampler_seed 9174 --augmentation_set_number 2

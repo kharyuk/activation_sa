@@ -1,0 +1,6 @@
+#!/bin/bash -l
+
+export CUDA_VISIBLE_DEVICES=""
+source activate activation_sense_vt
+
+python ../experiments/1.2_si_variance.py --batch_size_activations_computing 100 --samples_per_class_train 732 --samples_per_class_valid 50 --data_dirname ../data/imagenet --activations_dirname ../results/ --model_dirname ../torch-models/ --model_filename vit_b_16-c867db91.pth --mkl_num_threads 5 --device cpu --recompute_activations 1 --remove_activations_hdf5 0 --desired_image_height 224 --desired_image_width 224 --network_name vit_b_16 --network_modules '["encoder.layers.encoder_layer_2", "encoder.layers.encoder_layer_5", "encoder.layers.encoder_layer_8", "encoder.layers.encoder_layer_11", "heads"]' --classification_layer_name heads --dataset imagenet --libstdcpp_path /mnt/bulky/pkharyuk/apd/envs/activation_sense/lib/libstdc++.so.6 --buffer_size_tv_computing 200 --subset_random_state_train 4376 --subset_random_state_valid 898967 --torch_seed 564579 --numpy_seed 133484 --class_sampler_seed 679 --dataset_part train+valid --Njobs_tv_computing 4 --augset1_p 0.5 --augset2_p 0.5 --activations_fnm_prefix sitv_vit_b_16_imagenet_activations --values_fnm_prefix sitv_vit_b_16_imagenet_values --Nsamples 32768 --compute_s2 1 --use_permutation_variable 1 --use_switch_variables 0 --use_partition_variable 1 --augmentation_set_number 2

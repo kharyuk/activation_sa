@@ -48,6 +48,9 @@ _pre_processing_functions_dict = {
     'alexnet': _alexnet_pre_processing_functions,
     'vgg11': _alexnet_pre_processing_functions,
     'resnet18': _alexnet_pre_processing_functions,
+    "vit_b_16":  _alexnet_pre_processing_functions,
+    "swin_t": _alexnet_pre_processing_functions,
+    "maxvit_t": _alexnet_pre_processing_functions,
     'custom': _alexnet_pre_processing_functions,
 }
     
@@ -55,5 +58,8 @@ _post_processing_functions_dict = {
     'alexnet': _alexnet_post_processing_functions,
     'vgg11': _alexnet_post_processing_functions,
     'resnet18': _alexnet_post_processing_functions,
+    "vit_b_16":  _alexnet_post_processing_functions,
+    "swin_t":  _alexnet_post_processing_functions,
+    "maxvit_t":  _alexnet_post_processing_functions,
     'custom': _alexnet_post_processing_functions,
 }

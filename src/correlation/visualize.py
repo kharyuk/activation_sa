@@ -19,6 +19,7 @@ def single_plot_corr_variables(
     variable_names,
     cmap='RdBu_r',
     title=None,
+    text_size=None
 ):
     n_vals = len(variable_names)
     x_arr = range(n_vals)
@@ -35,6 +36,7 @@ def single_plot_corr_variables(
         cmap=cmap,
         vmin=-1,
         vmax=1,
+        annot_kws={"size": text_size}
         #mask=mask,
     )
     ax.set_xticklabels(
@@ -106,13 +108,17 @@ def single_plot_corr_modules(
     i_ax,
     mean_vals,
     module_names,
-    std_vals=None,
+    #std_vals=None,
+    ci_lower_vals=None,
+    ci_upper_vals=None,
     title=None,
     cmap='twilight',
 ):
     n_modules, n_corrcoef = mean_vals.shape
-    if std_vals is not None:
-        n_std_modules = std_vals.shape[0]
+    #if std_vals is not None:
+    if ci_lower_vals is not None and ci_upper_vals is not None:
+        #n_std_modules = std_vals.shape[0]
+        n_avg_modules = ci_lower_vals.shape[0]
     x_arr = range(n_modules)
     #colors = plt.cm.nipy_spectral_r(np.linspace(0, 1, n_corrcoef))
     #colors = plt.cm.gist_heat_r(np.linspace(0, 1, n_corrcoef))
@@ -125,11 +131,15 @@ def single_plot_corr_modules(
             color=colors[i],
             alpha=0.5
         )
-        if std_vals is not None:
+        #if std_vals is not None:
+        if ci_lower_vals is not None and ci_upper_vals is not None:
             ax.fill_between(
-                x_arr[:n_std_modules],
-                y1=mean_vals[:n_std_modules, i]+std_vals[:, i],
-                y2=mean_vals[:n_std_modules, i]-std_vals[:, i],
+                #x_arr[:n_std_modules],
+                #y1=mean_vals[:n_std_modules, i]+std_vals[:, i],
+                #y2=mean_vals[:n_std_modules, i]-std_vals[:, i],
+                x_arr[:n_avg_modules],
+                y1=ci_upper_vals[:n_avg_modules, i],
+                y2=ci_lower_vals[:n_avg_modules, i],
                 color=colors[i],
                 alpha=0.05,
             )
@@ -157,6 +167,10 @@ def get_paired_correlations_fixed_values(
     corr_type='spearman',
     extract_auxilliary_names=False,
     nan_mask_policy='all',
+    post_values_func=None,
+    ci_alpha=0.05,
+    ci_n_bootstraps=1000,
+    ci_random_state=0
 ):
     assert nan_mask_policy in _nan_policy_list
 
@@ -174,7 +188,8 @@ def get_paired_correlations_fixed_values(
     ind = np.triu_indices(n=n_aug, k=1)
     
     cormat_means = np.empty((n_modules, n_vals, n_aug, n_aug))
-    cormat_std = np.empty((n_conv_modules, n_vals, n_aug*(n_aug-1)//2))
+    cormat_ci_lower = np.empty((n_conv_modules, n_vals, n_aug*(n_aug-1)//2))
+    cormat_ci_upper = np.empty((n_conv_modules, n_vals, n_aug*(n_aug-1)//2))
     cormat_nan_masks = np.empty((n_modules, n_vals, n_aug, n_aug))
     for i_mn, module_name in enumerate(network_modules_list):
         for i_row, row_name in enumerate(values_names_list):
@@ -211,13 +226,18 @@ def get_paired_correlations_fixed_values(
                     ),
                     shpv_normalize=True,
                 )
+                #print(row_name, current_values.shape)
+                if post_values_func is not None:
+                    current_values = post_values_func(current_values)
+                #print(row_name, current_values.shape)
                 values.append(current_values)
             values = np.array(values)
+            #print(values.shape)
             #print(values.min(), values.max())
             n_units = values.shape[1]
             values = values.reshape((n_aug, n_units, -1))
-            C_mean, C_std, C_nan_mask = correlation.compute.compute_unitwise_correlation(
-                values, None, corr_type
+            C_mean, C_lower, C_upper, C_nan_mask = correlation.compute.compute_unitwise_correlation(
+                values, None, corr_type, ci_alpha, ci_n_bootstraps, ci_random_state
             )
             del values;
             cormat_means[i_mn, i_row, :, :] = C_mean
@@ -226,9 +246,11 @@ def get_paired_correlations_fixed_values(
             elif nan_mask_policy == 'any':
                 cormat_nan_masks[i_mn, i_row, :, :] = C_nan_mask.any(axis=0)
             if i_mn < n_conv_modules:
-                cormat_std[i_mn, i_row, :] = C_std[ind]
+                #cormat_std[i_mn, i_row, :] = C_std[ind]
+                cormat_ci_lower[i_mn, i_row, :] = C_lower[ind]
+                cormat_ci_upper[i_mn, i_row, :] = C_upper[ind]
             
-    return cormat_means, cormat_std, augmentation_names, cormat_nan_masks
+    return cormat_means, cormat_ci_lower, cormat_ci_upper, augmentation_names, cormat_nan_masks
 
 def get_paired_cross_correlations_fixed_values(
     values_fnms_dict,
@@ -241,6 +263,10 @@ def get_paired_cross_correlations_fixed_values(
     corr_type='spearman',
     extract_auxilliary_names=True,
     nan_mask_policy='all',
+    post_values_func=None,
+    ci_alpha=0.05,
+    ci_n_bootstraps=1000,
+    ci_random_state=632
 ):
     assert nan_mask_policy in _nan_policy_list
     
@@ -262,8 +288,9 @@ def get_paired_cross_correlations_fixed_values(
     ind = np.triu_indices(n=n_aug_aux, k=1)
 
     cormat_means = np.empty((n_modules, n_vals_pairs, n_aug_aux, n_aug_aux))
-    cormat_nanmask = np.empty((n_modules, n_vals_pairs, n_aug_aux, n_aug_aux))
-    cormat_std = np.empty((n_conv_modules, n_vals_pairs, n_aug_aux*(n_aug_aux-1)//2))
+    cormat_nan_masks = np.empty((n_modules, n_vals_pairs, n_aug_aux, n_aug_aux))
+    cormat_ci_lower = np.empty((n_conv_modules, n_vals_pairs, n_aug_aux*(n_aug_aux-1)//2))
+    cormat_ci_upper = np.empty((n_conv_modules, n_vals_pairs, n_aug_aux*(n_aug_aux-1)//2))
     cross_values_names_list = []
 
     dataset_part = None
@@ -302,6 +329,8 @@ def get_paired_cross_correlations_fixed_values(
                         ),
                         shpv_normalize=True,
                     )
+                    if post_values_func is not None:
+                        current_values = post_values_func(current_values)
                     values.append(current_values)
                     current_values2 = preparation.visualize.get_conv2d_unit_values(
                         values_fnms_dict,
@@ -320,6 +349,8 @@ def get_paired_cross_correlations_fixed_values(
                         ),
                         shpv_normalize=True,
                     )
+                    if post_values_func is not None:
+                        current_values2 = post_values_func(current_values2)
                     values2.append(current_values2)
 
                 values = np.array(values)
@@ -328,22 +359,26 @@ def get_paired_cross_correlations_fixed_values(
                 n_units = values.shape[1]
                 values = values.reshape((n_aug_aux, n_units, -1))
                 values2 = values2.reshape((n_aug_aux, n_units, -1))
-                C_mean, C_std, C_nan_mask = correlation.compute.compute_unitwise_correlation(
-                    values, values2, corr_type
+                C_mean, C_lower, C_upper, C_nan_mask = correlation.compute.compute_unitwise_correlation(
+                    values, values2, corr_type, ci_alpha, ci_n_bootstraps, ci_random_state
                 )
                 del values;
                 i_row_ind = i_row*(n_vals-1)+i_row2
                 cormat_means[i_mn, i_row_ind, :, :] = C_mean
-                if i_mn < n_conv_modules:
-                    cormat_std[i_mn, i_row_ind, :] = C_std[ind]
                 if nan_mask_policy == 'all':
-                    cormat_nanmask[i_mn, i_row_ind, :, :] = C_nan_mask.all(axis=0)
+                    cormat_nan_masks[i_mn, i_row_ind, :, :] = C_nan_mask.all(axis=0)
                 elif nan_mask_policy == 'any':
-                    cormat_nanmask[i_mn, i_row_ind, :, :] = C_nan_mask.any(axis=0)
+                    cormat_nan_masks[i_mn, i_row_ind, :, :] = C_nan_mask.any(axis=0)
+                if i_mn < n_conv_modules:
+                    cormat_ci_lower[i_mn, i_row_ind, :] = C_lower[ind]
+                    cormat_ci_upper[i_mn, i_row_ind, :] = C_upper[ind]
                 if i_mn == 0:
                     cross_values_names_list.append(f'{row_name}--{row_name2}')
     
-    return cormat_means, cormat_std, augmentation_and_auxilliary_names, cross_values_names_list, cormat_nanmask
+    return (
+        cormat_means, cormat_ci_lower, cormat_ci_upper,
+        augmentation_and_auxilliary_names, cross_values_names_list, cormat_nan_masks
+    )
 
 def get_cross_correlations_single_value_fixed_values(
     values_fnms_dict,
@@ -358,8 +393,12 @@ def get_cross_correlations_single_value_fixed_values(
     cov_values_funcs,
     corr_type='spearman',
     extract_auxilliary_names=True,
+    post_values_func=None,
+    ci_alpha=0.05,
+    ci_n_bootstraps=1000,
+    ci_random_state=0
 ):
-
+    rng = np.random.default_rng(ci_random_state)
     n_vals = len(values_names_list)
     n_modules = len(network_modules_list)
 
@@ -375,7 +414,9 @@ def get_cross_correlations_single_value_fixed_values(
 
     corr_vals_dict, corr_vals_nanmask_dict = {}, {}
     mean_stats = np.empty((n_modules, n_vals, n_aug_aux))
-    std_stats = np.empty((n_conv_modules, n_vals, n_aug_aux))
+    #std_stats = np.empty((n_conv_modules, n_vals, n_aug_aux))
+    ci_lower_stats = np.empty((n_conv_modules, n_vals, n_aug_aux))
+    ci_upper_stats = np.empty((n_conv_modules, n_vals, n_aug_aux))
 
     for i_mn, module_name in enumerate(network_modules_list):
         corr_values, corr_values_nanmask = [], []
@@ -410,6 +451,8 @@ def get_cross_correlations_single_value_fixed_values(
                     ),
                     shpv_normalize=True,
                 )
+                if post_values_func is not None:
+                    current_values = post_values_func(current_values)
                 ##
                 cov_value_key = values_corr_pairs_dict[value_key]
                 cov_values_name = corr_values_names_dict[cov_value_key]
@@ -425,15 +468,28 @@ def get_cross_correlations_single_value_fixed_values(
                     values_func=None if cov_values_funcs is None else cov_values_funcs[cov_value_key][cov_values_name],
                     shpv_normalize=False,
                 )
-                #print(current_values.min(), current_values.max(), cov_values.min(), cov_values.max())
+                if post_values_func is not None:
+                    cov_values = post_values_func(cov_values)
+                #print(value_key, cov_value_key, current_values.min(), current_values.max(), cov_values.min(), cov_values.max())
                 current_corvals, current_nan_mask = correlation.compute.compute_correlation_cov_aug(
                     cov_values, current_values, corr_type
                 )
                 cval_corr_values.append(current_corvals)
                 cval_corr_values_nanmask.append(current_nan_mask)
                 if i_mn < n_conv_modules:
-                    mean_stats[i_mn, i_row, i_col] = current_corvals.mean()
-                    std_stats[i_mn, i_row, i_col] = current_corvals.std(ddof=1)
+                    current_corvals = correlation.compute.fisher_z(current_corvals)
+                    mean_stats[i_mn, i_row, i_col] = correlation.compute.inv_fisher_z(current_corvals.mean())
+                    #std_stats[i_mn, i_row, i_col] = correlation.compute.inv_fisher_z(current_corvals.std(ddof=1))
+                    k_bootstrap = len(current_corvals)
+                    bootstrapped_means = []
+                    for i_bootstrap in range(ci_n_bootstraps):
+                        c_ind_bootstrap = rng.choice(k_bootstrap, size=k_bootstrap, replace=True)
+                        c_mean_bootstrap = current_corvals[c_ind_bootstrap].mean()
+                        bootstrapped_means.append(c_mean_bootstrap)
+                    ci_lower = np.quantile(bootstrapped_means, q=0.5*ci_alpha)
+                    ci_upper = np.quantile(bootstrapped_means, q=1-0.5*ci_alpha)
+                    ci_lower_stats[i_mn, i_row, i_col] = correlation.compute.inv_fisher_z(ci_lower)
+                    ci_upper_stats[i_mn, i_row, i_col] = correlation.compute.inv_fisher_z(ci_upper)
                 else:
                     mean_stats[i_mn, i_row, i_col] = current_corvals                
                 del current_values, cov_values;
@@ -441,7 +497,11 @@ def get_cross_correlations_single_value_fixed_values(
             corr_values_nanmask.append(cval_corr_values_nanmask)
         corr_vals_dict[module_name] = np.array(corr_values)
         corr_vals_nanmask_dict[module_name] = np.array(corr_values_nanmask)
-    return corr_vals_dict, mean_stats, std_stats, augmentation_and_auxilliary_names, corr_vals_nanmask_dict
+    #return corr_vals_dict, mean_stats, std_stats, augmentation_and_auxilliary_names, corr_vals_nanmask_dict
+    return (
+        corr_vals_dict, mean_stats, ci_lower_stats, ci_upper_stats,
+        augmentation_and_auxilliary_names, corr_vals_nanmask_dict
+    )
                 
         
         
@@ -457,6 +517,7 @@ def plot_paired_correlations_fixed_values(
     cmap='RdBu_r',
     save_dirname=None,
     save_filename_base=None,
+    text_size=12
 ):
 
     n_vals = len(values_names_list)
@@ -499,7 +560,8 @@ def plot_paired_correlations_fixed_values(
                 cormat_means[i_mn, i_row, :, :],
                 shorten_augmentation_names,
                 cmap=cmap,
-                title=row_name
+                title=row_name,
+                text_size=text_size
             )
         if save_dirname is not None:
             save_filename = f'{save_filename_base}_{module_name}.pdf'
@@ -548,7 +610,8 @@ def plot_hist_std_paired_correlations_fixed_values(
             
 def plot_consolidated_paired_correlations_fixed_values(
     cormat_means,
-    cormat_std,
+    cormat_ci_lower,
+    cormat_ci_upper,
     network_modules_list,
     values_names_list,
     figsize=None,
@@ -570,7 +633,8 @@ def plot_consolidated_paired_correlations_fixed_values(
             cormat_means[:, i_row, ind[0], ind[1]],
             #tmp_means[:, i_row, :],
             network_modules_list,
-            std_vals=cormat_std[:, i_row, :],
+            ci_lower_vals=cormat_ci_lower[:, i_row, :] if cormat_ci_lower is not None else None,
+            ci_upper_vals=cormat_ci_upper[:, i_row, :] if cormat_ci_upper is not None else None,
             title=row_name,
             cmap=cmap,
         )
@@ -648,7 +712,9 @@ def plot_cross_correlations_single_value_fixed_values(
                 
 def plot_consolidated_cross_correlations_single_value_fixed_values(
     cormat_means,
-    cormat_std,
+    #cormat_std,
+    cormat_ci_lower,
+    cormat_ci_upper,
     network_modules_list,
     values_names_list,
     figsize=None,
@@ -668,9 +734,85 @@ def plot_consolidated_cross_correlations_single_value_fixed_values(
             i_row,
             cormat_means[:, i_row, :],
             network_modules_list,
-            std_vals=cormat_std[:, i_row, :],
+            #std_vals=cormat_std[:, i_row, :],
+            ci_lower_vals=cormat_ci_lower[:, i_row, :] if cormat_ci_lower is not None else None,
+            ci_upper_vals=cormat_ci_upper[:, i_row, :] if cormat_ci_upper is not None else None,
             title=row_name,
             cmap=cmap
         )
     if show:
         plt.show()
+
+def print_ci_delta_avg_cormat(
+    cormat_means,
+    cormat_ci_lower,
+    cormat_ci_upper,
+    network_modules,
+    n_non_fc_modules,
+    values_names_list,
+    sensitivity_variables
+):
+    triu_ind = np.triu_indices(len(sensitivity_variables), k=1)
+    for i_mn, module_name in enumerate(network_modules):
+        if i_mn == n_non_fc_modules:
+            break
+        for i_sens_val, sens_val_name in enumerate(values_names_list):
+            ci_lower = cormat_ci_lower[i_mn, i_sens_val, :]
+            ci_upper = cormat_ci_upper[i_mn, i_sens_val, :]
+            c_mean = cormat_means[i_mn, i_sens_val, triu_ind[0], triu_ind[1]]
+            if ((ci_lower > c_mean).any() or (ci_upper < c_mean).any()):
+                print("OUT OF INTERVAL")
+            c_delta = ci_upper - ci_lower
+            min_delta = np.min(c_delta)
+            max_delta = np.max(c_delta)
+            print(
+                f"{module_name}, {sens_val_name}: "
+                f" {min_delta:.3f} <= delta <= {max_delta:.3f}"
+            )
+
+def print_ci_delta_avg_cormaps(
+    mean_stats,
+    ci_lower_stats,
+    ci_upper_stats,
+    network_modules,
+    n_non_fc_modules,
+    values_names_list,
+    augmentation_and_auxilliary_names    
+):
+    for i_mn, module_name in enumerate(network_modules):
+        if i_mn == n_non_fc_modules:
+            break
+        for i_sens_val, sens_val_name in enumerate(values_names_list):
+            min_delta = np.inf
+            max_delta = -np.inf
+            for i_aug, aug_name in enumerate(augmentation_and_auxilliary_names):
+                ci_lower = ci_lower_stats[i_mn, i_sens_val, i_aug]
+                ci_upper = ci_upper_stats[i_mn, i_sens_val, i_aug]
+                c_mean = mean_stats[i_mn, i_sens_val, i_aug]
+                #print(
+                #    f"{module_name}, {sens_val_name}, {aug_name}, "
+                #    #f"{ci_lower:.3f} <= {c_mean:.3f} <= {ci_upper:.3f}, "
+                #    f"Delta={(ci_upper - ci_lower) / 2.:.3f}"
+                #)
+                if not ci_lower <= c_mean <= ci_upper:
+                    print("OUT OF INTERVAL")
+                c_delta = ci_upper - ci_lower
+                min_delta = min(min_delta, c_delta)
+                max_delta = max(max_delta, c_delta)
+            print(
+                f"{module_name}, {sens_val_name}: "
+                f" {min_delta:.3f} <= delta <= {max_delta:.3f}"
+            )
+
+
+
+
+
+
+
+
+
+
+
+
+

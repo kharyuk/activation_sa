@@ -185,6 +185,7 @@ def plot_decomposed_images(
     mask_color_name='firebrick',
     show_colorbar=True,
     colorbar_path=None,
+    text_size = 'large'
 ):
     assert layer_type in ['conv2d', 'fc']
     nvars = len(variable_names)
@@ -262,7 +263,7 @@ def plot_decomposed_images(
     #figwidth = (m + (m-1)*wspace)/float((n+(n-1)*hspace)*aspect)*figheight*fisasp
     
     current_mask = None
-    text_size = 'large'
+    
     
     ind = 0
     for i in range(nblocks):
@@ -356,7 +357,8 @@ def plot_si2_images(
     fc_color_name='red',
     mask_color_name='firebrick',
     show_colorbar=True,
-    rescale_blocks=False
+    rescale_blocks=False,
+    text_size = 'large'
 ):
     assert layer_type in ['conv2d', 'fc']
     #(36, )
@@ -410,7 +412,7 @@ def plot_si2_images(
         #height_ratios=height_ratios, width_ratios=width_ratios
     )
     
-    text_size = 'large'
+    
     current_mask = None
     
     n_col_blocks = n_row_blocks = nvars
@@ -662,6 +664,7 @@ def plot_many_block_images_scaled(
     rescale_blocks=True,
     show_colorbar=True,
     colorbar_path=None,
+    text_size = 'large'
 ):
     
     assert layer_type in ['conv2d', 'fc']
@@ -713,7 +716,7 @@ def plot_many_block_images_scaled(
         hspace=0.05,
         #height_ratios=(1-fc_height_fraction, fc_height_fraction)
     )
-    text_size = 'large'
+    
     current_mask = None
     
     ind = 0
@@ -1171,6 +1174,7 @@ def custom_plot_single_value_images(
     global_bounds_conv_only=True,
     colorbar_path=None,
     show=True,
+    text_size='large'
 ):
     if global_colorbounds:
         #assert (vmin is None) and (vmax is None)
@@ -1190,6 +1194,8 @@ def custom_plot_single_value_images(
     values = []
     for i_mn, module_name in enumerate(network_module_names):
         current_values, act_shape = get_values(values_path, module_name, values_name, values_func)
+        if post_values_func is not None:
+            current_values, act_shape = post_values_func(current_values, act_shape)
         #with h5py.File(values_path, 'r') as vals:
         #    current_group = vals[module_name]
         #    if isinstance(values_name, str):
@@ -1223,13 +1229,14 @@ def custom_plot_single_value_images(
         n_rows_list.append( n_rows )
         values.append(current_values)    
     max_n_rows = max(n_rows_list[:n_conv_modules])
-    if post_values_func is not None:
-        values = post_values_func(values)
+    #if post_values_func is not None:
+    #    values = post_values_func(values)
     
     if show_colorbar:
         assert (vmin is not None) and (vmax is not None)
+        bounds = np.linspace(vmin, vmax, 6)
         cb_fig = plot_colorbar(
-            figsize=(30, 1), w=0.1, h=0.05, vmin=vmin, vmax=vmax, dv=(vmax-vmin)/5, ticks=None,
+            figsize=(30, 1), w=0.1, h=0.05, vmin=vmin, vmax=vmax, dv=(vmax-vmin)/5, ticks=bounds,
             label='', cmap=conv2d_cmap_name
         )
         if colorbar_path is not None:
@@ -1254,7 +1261,6 @@ def custom_plot_single_value_images(
         hspace=0.05,
         height_ratios=(1-fc_height_fraction, fc_height_fraction)
     )
-    text_size = 'large'
     
     i_module = 0
     for i_block_row in range(n_block_rows):
@@ -1385,7 +1391,8 @@ def si_compact_plot(
     conv2d_cmap_name='Reds',
     fc_color_name='red',
     show=True,
-    show_colorbar=True
+    show_colorbar=True,
+    text_size="large"
 ):
     save_path = None
     for i_mn, module_name in enumerate(network_module_names):
@@ -1394,7 +1401,7 @@ def si_compact_plot(
             #act_shape = tuple(si.attrs[f'{module_name}'])
             act_shape = tuple(si[f'{module_name}'].attrs['shape'])
         if values_func is not None:
-            values = values_func(values)
+            values, act_shape = values_func(values, act_shape) #
         print(module_name)
         if i_mn < n_conv_modules:
             n_rows = act_shape[0] // n_cols
@@ -1427,6 +1434,7 @@ def si_compact_plot(
             fc_color_name=fc_color_name,
             show_colorbar=show_colorbar,
             colorbar_path=os.path.join(save_dirname, f'{save_filename_base}_{module_name}_colorbar.pdf'),
+            text_size=text_size
         )
         
         
@@ -1448,7 +1456,8 @@ def si2_compact_plot(
     fc_color_name='red',
     show=True,
     show_colorbar=True,
-    rescale_blocks=False
+    rescale_blocks=False,
+    text_size="large"
 ):
     save_path = None
     for i_mn, module_name in enumerate(network_module_names):
@@ -1457,7 +1466,7 @@ def si2_compact_plot(
             #act_shape = tuple(si.attrs[f'{module_name}'])
             act_shape = tuple(si[f'{module_name}'].attrs['shape'])
         if values_func is not None:
-            values = values_func(values)
+            values, act_shape = values_func(values, act_shape) #
         print(module_name)
         if i_mn < n_conv_modules:
             n_rows = act_shape[0] // n_cols
@@ -1488,7 +1497,8 @@ def si2_compact_plot(
             conv2d_cmap_name=conv2d_cmap_name,
             fc_color_name=fc_color_name,
             show_colorbar=show_colorbar,
-            rescale_blocks=rescale_blocks
+            rescale_blocks=rescale_blocks,
+            text_size=text_size
         )
         
 def get_min_max_values(a):
@@ -1641,6 +1651,8 @@ def shpv_compact_plot(
     show_colorbar=True,
     global_colorbounds=False,
     global_bounds_conv_only=True,
+    post_values_func=None,
+    text_size="large"
 ):
     save_path = None
     if global_colorbounds:
@@ -1659,6 +1671,8 @@ def shpv_compact_plot(
     for i_mn, module_name in enumerate(network_module_names):
         
         values, act_shape = get_shp_values(shpv_path, module_name, values_name, normalize, values_func, eps)
+        if post_values_func is not None:
+            values, act_shape = post_values_func(values, act_shape)
         print(module_name)
         if i_mn < n_conv_modules:
             n_rows = act_shape[0] // n_cols
@@ -1672,6 +1686,7 @@ def shpv_compact_plot(
             layer_type = 'fc'
             if global_bounds_conv_only:
                 vmin = vmax = None
+
         if save_dirname is not None:
             save_filename = f'{save_filename_base}_{module_name}.pdf'
             save_path = os.path.join(save_dirname, save_filename)
@@ -1694,6 +1709,7 @@ def shpv_compact_plot(
             rescale_blocks=True,
             show_colorbar=show_colorbar,
             colorbar_path=os.path.join(save_dirname, f'{save_filename_base}_{module_name}_colorbar.pdf'),
+            text_size=text_size
         )
 
 def plot_colorbar(figsize=None, w=1., h=1., vmin=0, vmax=1, dv=0.2, ticks=None, label='', cmap=None):

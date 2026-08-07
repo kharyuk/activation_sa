@@ -42,20 +42,26 @@ def compute_mean_valid_confusion_matrices(
     
     # val_name -> module_name -> aug_set_num
     result_cms = {}
+    result_cms_std = {}
     result_acc = {}
     
     for i_cval, cur_vals_name in enumerate(values_names):
         result_cms[cur_vals_name] = result_cms.get(cur_vals_name, {})
+        result_cms_std[cur_vals_name] = result_cms_std.get(cur_vals_name, {})
         result_acc[cur_vals_name] = result_acc.get(cur_vals_name, {})
         for i_mn, module_name in enumerate(network_modules):
             if i_mn == n_conv_modules:
                 break
             result_cms[cur_vals_name][module_name] = result_cms[cur_vals_name].get(module_name, {})
+            result_cms_std[cur_vals_name][module_name] = result_cms_std[cur_vals_name].get(module_name, {})
             result_acc[cur_vals_name][module_name] = result_acc[cur_vals_name].get(module_name, {})
             i_var = 0
             for i_aug, augmentation_set_number in enumerate(augmentation_set_numbers_list):
                 result_cms[cur_vals_name][module_name][augmentation_set_number] = (
                     result_cms[cur_vals_name][module_name].get(augmentation_set_number, {})
+                )
+                result_cms_std[cur_vals_name][module_name][augmentation_set_number] = (
+                    result_cms_std[cur_vals_name][module_name].get(augmentation_set_number, {})
                 )
                 result_acc[cur_vals_name][module_name][augmentation_set_number] = (
                     result_acc[cur_vals_name][module_name].get(augmentation_set_number, {})
@@ -102,22 +108,39 @@ def compute_mean_valid_confusion_matrices(
                     
                     del conf_mat_train, conf_mat_valid, y_pred_train, y_pred_valid, lda;
                     
-                conf_mat_train = np.sum(conf_mat_train_list, axis=0)
-                conf_mat_valid = np.sum(conf_mat_valid_list, axis=0)
+                #conf_mat_train = np.sum(conf_mat_train_list, axis=0)
+                #conf_mat_valid = np.sum(conf_mat_valid_list, axis=0)
                 # sum(axis=1) means that we get number of all true samples per variable
-                conf_mat_train = conf_mat_train / np.sum(conf_mat_train, axis=1, keepdims=True)
-                conf_mat_valid = conf_mat_valid / np.sum(conf_mat_valid, axis=1, keepdims=True)
+                #conf_mat_train = conf_mat_train / np.sum(conf_mat_train, axis=1, keepdims=True)
+                #conf_mat_valid = conf_mat_valid / np.sum(conf_mat_valid, axis=1, keepdims=True)
+
+                # N*K x V x V
+                conf_mat_train = np.array(conf_mat_train_list)
+                conf_mat_train = conf_mat_train / np.sum(conf_mat_train, axis=-1, keepdims=True)
+                mean_conf_mat_train = np.mean(conf_mat_train, axis=0)
+                std_conf_mat_train = np.std(conf_mat_train, axis=0)
+
+                conf_mat_valid = np.array(conf_mat_valid_list)
+                conf_mat_valid = conf_mat_valid / np.sum(conf_mat_valid, axis=-1, keepdims=True)
+                mean_conf_mat_valid = np.mean(conf_mat_valid, axis=0)
+                std_conf_mat_valid = np.std(conf_mat_valid, axis=0)
                 
-                result_cms[cur_vals_name][module_name][augmentation_set_number]['train'] = conf_mat_train
-                result_cms[cur_vals_name][module_name][augmentation_set_number]['valid'] = conf_mat_valid
+                result_cms[cur_vals_name][module_name][augmentation_set_number]['train'] = mean_conf_mat_train
+                #conf_mat_train
+                result_cms[cur_vals_name][module_name][augmentation_set_number]['valid'] = mean_conf_mat_valid
+                #conf_mat_valid
+
+                result_cms_std[cur_vals_name][module_name][augmentation_set_number]['train'] = std_conf_mat_train
+                result_cms_std[cur_vals_name][module_name][augmentation_set_number]['valid'] = std_conf_mat_valid
                 
                 result_acc[cur_vals_name][module_name][augmentation_set_number]['train'] = np.mean(acc_train)
                 result_acc[cur_vals_name][module_name][augmentation_set_number]['valid'] = np.mean(acc_valid)
                 
                 del repeated_kfold_cv, conf_mat_train_list, conf_mat_valid_list, conf_mat_train, conf_mat_valid;
+                del mean_conf_mat_valid, std_conf_mat_valid, mean_conf_mat_train, std_conf_mat_train;
                 
                 i_var += n_vars
-    return result_cms, result_acc
+    return result_cms, result_cms_std, result_acc
 
 
 def project_2d_lda(
@@ -177,7 +200,30 @@ def project_2d_lda(
         
     return projected_sensitivity_values
 
-
+def print_max_std_stats(
+    conf_mat_std_dict,
+    network_modules,
+    values_names,
+    augmentation_set_numbers_list,
+    n_non_fc_models,
+    dataset_part="valid"
+):
+    for sens_val_name in values_names:
+        min_max_sigma = np.inf
+        max_max_sigma = -np.inf
+        for i, module_name in enumerate(network_modules):
+            if i == n_non_fc_models:
+                break
+            for aug_set in augmentation_set_numbers_list:
+                tmp_cm_std = conf_mat_std_dict[sens_val_name][module_name][aug_set][dataset_part]
+                cmax = tmp_cm_std.max()
+                print(
+                    f"Sensitivity={sens_val_name}, module={module_name}, aug.set={aug_set}"
+                    f", max(sigma)={cmax:.3f}"
+                )
+                min_max_sigma = min(min_max_sigma, cmax)
+                max_max_sigma = max(max_max_sigma, cmax)
+        print(f"Sensitivity={sens_val_name}: {min_max_sigma:.3f} <= max(sigma) <= {max_max_sigma:.3f}")
 
 
 def remap_dist(

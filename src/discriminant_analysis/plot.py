@@ -25,6 +25,8 @@ def plot_confusion_matrices(
     show=True,
     save_dirname=None,
     save_filename_base=None,
+    title_size=None,
+    text_size=None
 ):
     assert which in ('train', 'valid')
 
@@ -71,13 +73,17 @@ def plot_confusion_matrices(
                     index=current_shorten_names,
                     columns=current_shorten_names,
                 )
-                sns.heatmap(df_vals, annot=True, ax=ax[i_aug, i_cval], cmap=cmap, cbar=False)
+                sns.heatmap(
+                    df_vals, annot=True, ax=ax[i_aug, i_cval], cmap=cmap, cbar=False,
+                    annot_kws={"size": text_size}
+                )
                 ax[i_aug, i_cval].set_xticklabels(
                     current_shorten_names,
                     rotation=20
                 )
                 ax[i_aug, i_cval].set_title(
-                    f'({cur_vals_name}) {module_name}, aug.set={augmentation_set_number}; acc={acc:.2f}'
+                    f'({cur_vals_name}) {module_name}, aug.set={augmentation_set_number}; acc={acc:.2f}',
+                    fontsize=title_size
                 )
                 if i_cval > 0:
                     ax[i_aug, i_cval].set_yticklabels([])

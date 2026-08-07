@@ -184,9 +184,11 @@ def plot_hist_std_correlations_fixed_values(
 
 def plot_consolidated_paired_correlations_fixed_values(
     cormat_mean_hsv,
-    cormat_std_hsv,
+    cormat_ci_lower_hsv,
+    cormat_ci_upper_hsv,
     cormat_mean_orig,
-    cormat_std_orig,
+    cormat_ci_lower_orig,
+    cormat_ci_upper_orig,
     network_modules_list,
     chans_names_list,
     values_names_list,
@@ -199,12 +201,17 @@ def plot_consolidated_paired_correlations_fixed_values(
     n_chans = len(chans_names_list)
     n_vals = len(values_names_list)
     n_modules = len(network_modules_list)
-    _, _, _, n_aug, _ = cormat_std_hsv.shape
+    #_, _, _, n_aug, _ = cormat_std_hsv.shape
+    _, _, _, n_aug, _ = cormat_mean_hsv.shape
     ind = np.triu_indices(n=n_aug, k=1)
     #tmp_means = np.empty((n_modules, n_vals, n_aug*(n_aug-1)//2))
     #tmp_means[:, :, :] = cormat_means[:, :, ind[0], ind[1]]
 
-    orig_flag = (cormat_mean_orig is not None) and (cormat_std_orig is not None)
+    orig_flag = (
+        (cormat_mean_orig is not None)
+        and (cormat_ci_lower_orig is not None)
+        and (cormat_ci_upper_orig is not None)
+    )
     
     fig, ax = plt.subplots(n_chans+int(orig_flag), n_vals, figsize=figsize, sharey=True, sharex=True)
     for i_row, row_name in enumerate(chans_names_list):
@@ -214,16 +221,21 @@ def plot_consolidated_paired_correlations_fixed_values(
                 i_col,
                 cormat_mean_hsv[:, i_row, i_col, ind[0], ind[1]],
                 network_modules_list,
-                std_vals=cormat_std_hsv[:, i_row, i_col, ind[0], ind[1]],
+                #std_vals=cormat_std_hsv[:, i_row, i_col, ind[0], ind[1]],
+                ci_lower_vals=cormat_ci_lower_hsv[:, i_row, i_col, ind[0], ind[1]],
+                ci_upper_vals=cormat_ci_upper_hsv[:, i_row, i_col, ind[0], ind[1]],
                 title='' if i_row > 0 else f'({col_name})',
                 cmap=cmap,
             )
             if i_col == 0:
                 ax[i_row, i_col].set_ylabel(row_name)
-            vmax = (
-                cormat_mean_hsv[:, i_row, i_col, ind[0], ind[1]]
-                + cormat_std_hsv[:, i_row, i_col, ind[0], ind[1]]
-            ).max()
+            #vmax = (
+            #    cormat_mean_hsv[:, i_row, i_col, ind[0], ind[1]]
+            #    + cormat_std_hsv[:, i_row, i_col, ind[0], ind[1]]
+            #).max()
+            tmp = cormat_ci_upper_hsv[:, i_row, i_col, ind[0], ind[1]]
+            tmp = tmp[~np.isnan(tmp)]
+            vmax = tmp.max()
             ax[i_row, i_col].set_ylim((vmin, max(vmax, 1)))
             if (i_row == 0) and (orig_flag):
                 visualize.single_plot_corr_modules(
@@ -231,7 +243,9 @@ def plot_consolidated_paired_correlations_fixed_values(
                     i_col,
                     cormat_mean_orig[:, i_col, ind[0], ind[1]],
                     network_modules_list,
-                    std_vals=cormat_std_orig[:, i_col, ind[0], ind[1]],
+                    #std_vals=cormat_std_orig[:, i_col, ind[0], ind[1]],
+                    ci_lower_vals=cormat_ci_lower_orig[:, i_col, ind[0], ind[1]],
+                    ci_upper_vals=cormat_ci_upper_orig[:, i_col, ind[0], ind[1]],
                     title='',
                     cmap=cmap,
                 )
@@ -252,6 +266,7 @@ def unit_mean_pixelwise_diff_correlation_patterns(
     cmap='RdBu_r',
     figsize=(12, 12),
     show=True,
+    text_size=12
 ):
 
     _, c_augaux_names =  (
@@ -290,6 +305,7 @@ def unit_mean_pixelwise_diff_correlation_patterns(
                     vmin=-1,
                     vmax=1,
                     mask=mask,
+                    annot_kws={"size": text_size}
                 )
                 if i_val == 0:
                     cax.set_ylabel(f'{chan_name}')
@@ -322,6 +338,7 @@ def hsv_correlation_diff_patterns_among_units(
     save_path=None,
     cmap_bounds=None,
     cormat_nanmask=None,
+    text_size=12
 ):
     if cmap_bounds is None:
         vmin, vmax = 0, None
@@ -411,6 +428,7 @@ def hsv_correlation_diff_patterns_among_units(
                 vmin=vmin,
                 vmax=vmax,
                 mask=mask,
+                annot_kws={"size": text_size}
             )
             #if cormat_nanmask is not None:
             #    cmap_inds = np.nonzero(cur_cormat_nanmask.flatten(order='C'))[0]
@@ -494,4 +512,252 @@ def plot_hist_std_correlations_fixed_values_cross_layers(
     if show:
         plt.tight_layout()
         plt.show()
+
+
+'''
+def print_ci_delta_avg_cormat(
+    mean_stats,
+    ci_lower_stats,
+    ci_upper_stats,
+    network_modules,
+    n_non_fc_modules,
+    values_names_list,
+    augmentation_and_auxilliary_names    
+):
+    for i_mn, module_name in enumerate(network_modules):
+        if i_mn == n_non_fc_modules:
+            break
+        for i_sens_val, sens_val_name in enumerate(values_names_list):
+            min_delta = np.inf
+            max_delta = -np.inf
+            for i_aug, aug_name in enumerate(augmentation_and_auxilliary_names):
+                ci_lower = ci_lower_stats[i_mn, i_sens_val, i_aug]
+                ci_upper = ci_upper_stats[i_mn, i_sens_val, i_aug]
+                c_mean = mean_stats[i_mn, i_sens_val, i_aug]
+                #print(
+                #    f"{module_name}, {sens_val_name}, {aug_name}, "
+                #    #f"{ci_lower:.3f} <= {c_mean:.3f} <= {ci_upper:.3f}, "
+                #    f"Delta={(ci_upper - ci_lower) / 2.:.3f}"
+                #)
+                if not ci_lower <= c_mean <= ci_upper:
+                    print("OUT OF INTERVAL")
+                c_delta = ci_upper - ci_lower
+                min_delta = min(min_delta, c_delta)
+                max_delta = max(max_delta, c_delta)
+            print(
+                f"{module_name}, {sens_val_name}: "
+                f" {min_delta:.3f} <= delta <= {max_delta:.3f}"
+            )
+''';
+def print_ci_interval_widths_cormat_hsv(
+    mean_cormat_hsv_dict,
+    ci_lower_cormat_hsv_dict,
+    ci_upper_cormat_hsv_dict,
+    network_modules,
+    chans_name_list,
+    value_name_list,
+    augmentation_set_numbers_list,
+    n_conv_modules,
+    extract_auxilliary_names=True
+):
+    for i_aug, augmentation_set_number in enumerate(augmentation_set_numbers_list):
+        _, c_augaux_names =  (
+            prediction.utils.get_shortened_variable_names_single_augset(
+                augmentation_set_number,
+                extract_auxilliary_names=extract_auxilliary_names
+            )
+        )
+        triu_ind = np.tril_indices(len(c_augaux_names), k=1)
+        for i_mn, module_name in enumerate(network_modules):
+            if i_mn == n_conv_modules:
+                break
+            for i_ch, channel_name in enumerate(chans_name_list):
+                for i_val, sens_val_name in enumerate(value_name_list):
+                    c_mean = mean_cormat_hsv_dict[augmentation_set_number][
+                        i_mn, i_ch, i_val, triu_ind[0], triu_ind[1]
+                    ]
+                    ci_lower = ci_lower_cormat_hsv_dict[augmentation_set_number][
+                        i_mn, i_ch, i_val, triu_ind[0], triu_ind[1]
+                    ]
+                    ci_upper = ci_upper_cormat_hsv_dict[augmentation_set_number][
+                        i_mn, i_ch, i_val, triu_ind[0], triu_ind[1]
+                    ]
+                    if ((ci_lower > c_mean).all() or (ci_upper < c_mean).all()):
+                        print("OUT OF INTERVAL")
+                    c_delta = ci_upper - ci_lower
+                    c_delta = c_delta[~np.isnan(c_delta)]
+                    min_delta = np.min(c_delta)
+                    max_delta = np.max(c_delta)
+                    print(
+                        f"aug={augmentation_set_number}, {module_name}, {channel_name}, {sens_val_name}: "
+                        f" {min_delta:.9f} <= delta <= {max_delta:.9f}"
+                    )
+                    
+def print_ci_interval_widths_cormat_orig(
+    mean_cormat_orig_dict,
+    ci_lower_cormat_orig_dict,
+    ci_upper_cormat_orig_dict,
+    network_modules,
+    value_name_list,
+    augmentation_set_numbers_list,
+    n_conv_modules,
+    extract_auxilliary_names=True
+):
+    #extract_auxilliary_names = True
+    for i_aug, augmentation_set_number in enumerate(augmentation_set_numbers_list):
+        _, c_augaux_names =  (
+            prediction.utils.get_shortened_variable_names_single_augset(
+                augmentation_set_number,
+                extract_auxilliary_names=extract_auxilliary_names
+            )
+        )
+        triu_ind = np.tril_indices(len(c_augaux_names), k=1)
+        for i_mn, module_name in enumerate(network_modules):
+            if i_mn == n_conv_modules:
+                break
+            for i_val, sens_val_name in enumerate(value_name_list):
+                c_mean = mean_cormat_orig_dict[augmentation_set_number][
+                    i_mn, i_val, triu_ind[0], triu_ind[1]
+                ]
+                ci_lower = ci_lower_cormat_orig_dict[augmentation_set_number][
+                    i_mn, i_val, triu_ind[0], triu_ind[1]
+                ]
+                ci_upper = ci_upper_cormat_orig_dict[augmentation_set_number][
+                    i_mn, i_val, triu_ind[0], triu_ind[1]
+                ]
+                if ((ci_lower > c_mean).all() or (ci_upper < c_mean).all()):
+                    print("OUT OF INTERVAL")
+                c_delta = ci_upper - ci_lower
+                c_delta = c_delta[~np.isnan(c_delta)]
+                min_delta = np.min(c_delta)
+                max_delta = np.max(c_delta)
+                print(
+                    f"aug={augmentation_set_number}, {module_name}, original, {sens_val_name}: "
+                    f" {min_delta:.9f} <= delta <= {max_delta:.9f}"
+                )
+
+
+def print_ci_interval_widths_cormat_diff(
+    mean_cormat_diff,
+    ci_lower_cormat_diff,
+    ci_upper_cormat_diff,
+    network_modules,
+    chans_name_list,
+    value_name_list,
+    augmentation_set_numbers_list,
+    n_conv_modules,
+    extract_auxilliary_names=True
+):
+    for i_aug, augmentation_set_number in enumerate(augmentation_set_numbers_list):
+        _, c_augaux_names =  (
+            prediction.utils.get_shortened_variable_names_single_augset(
+                augmentation_set_number,
+                extract_auxilliary_names=extract_auxilliary_names
+            )
+        )
+        triu_ind = np.tril_indices(len(c_augaux_names), k=1)
+        for i_mn, module_name in enumerate(network_modules):
+            if i_mn == n_conv_modules:
+                break
+            for i_ch, channel_name in enumerate(chans_name_list):
+                for i_val, sens_val_name in enumerate(value_name_list):
+                    c_mean = mean_cormat_diff[augmentation_set_number][
+                        i_mn, i_ch, i_val, triu_ind[0], triu_ind[1]
+                    ]
+                    ci_lower = ci_lower_cormat_diff[augmentation_set_number][
+                        i_mn, i_ch, i_val, triu_ind[0], triu_ind[1]
+                    ]
+                    ci_upper = ci_upper_cormat_diff[augmentation_set_number][
+                        i_mn, i_ch, i_val, triu_ind[0], triu_ind[1]
+                    ]
+                    if ((ci_lower > c_mean).all() or (ci_upper < c_mean).all()):
+                        print("OUT OF INTERVAL")
+                    c_delta = ci_upper - ci_lower
+                    c_delta = c_delta[~np.isnan(c_delta)]
+                    min_delta = np.min(c_delta)
+                    max_delta = np.max(c_delta)
+                    print(
+                        f"aug={augmentation_set_number}, {module_name}, {channel_name}, {sens_val_name}: "
+                        f" {min_delta:.9f} <= delta <= {max_delta:.9f}"
+                    )
+
+def print_ci_interval_widths_cormat_diff2(
+    cm_mean_hsv_diff_dict,
+    cm_ci_lower_hsv_diff_dict,
+    cm_ci_upper_hsv_diff_dict,
+    network_modules,
+    chans_name_list,
+    value_name_list,
+    augmentation_set_numbers_list,
+    n_conv_modules,
+    extract_auxilliary_names=True
+):
+    for i_aug, augmentation_set_number in enumerate(augmentation_set_numbers_list):
+        for i_mn1, module_name1 in enumerate(network_modules):
+            if i_mn1 == n_conv_modules:
+                break
+            for i_mn2, module_name2 in enumerate(network_modules):
+                if i_mn2 >= i_mn1:
+                    continue
+                if i_mn2 == n_conv_modules:
+                    break
+                for i_ch, channel_name in enumerate(chans_name_list):
+                    for i_val, sens_val_name in enumerate(value_name_list):
+                        c_mean = cm_mean_hsv_diff_dict[augmentation_set_number][
+                            i_ch, i_val, i_mn1, i_mn2
+                        ]
+                        ci_lower = cm_ci_lower_hsv_diff_dict[augmentation_set_number][
+                            i_ch, i_val, i_mn1, i_mn2
+                        ]
+                        ci_upper = cm_ci_upper_hsv_diff_dict[augmentation_set_number][
+                            i_ch, i_val, i_mn1, i_mn2
+                        ]
+                        if ((ci_lower > c_mean).all() or (ci_upper < c_mean).all()):
+                            print("OUT OF INTERVAL")
+                        c_delta = ci_upper - ci_lower
+                        #c_delta = c_delta[~np.isnan(c_delta)]
+                        print(
+                            f"aug={augmentation_set_number}, {module_name2}--{module_name1}"
+                            f", {channel_name}, {sens_val_name}: "
+                            f" delta={c_delta:.3f}"
+                        )
+
+def print_ci_interval_widths_cm_hsv_diff(
+    cm_mean_hsv_orig_diff_dict,
+    cm_ci_lower_hsv_orig_diff_dict,
+    cm_ci_upper_hsv_orig_diff_dict,
+    network_modules,
+    chans_name_list,
+    value_name_list,
+    augmentation_set_numbers_list,
+    n_conv_modules,
+    extract_auxilliary_names=True
+):
+    for i_aug, augmentation_set_number in enumerate(augmentation_set_numbers_list):
+        for i_mn1, module_name1 in enumerate(network_modules):
+            if i_mn1 == n_conv_modules:
+                break
+            for i_mn2, module_name2 in enumerate(network_modules):
+                if i_mn2 == n_conv_modules:
+                    break
+                for i_ch, channel_name in enumerate(chans_name_list):
+                    for i_val, sens_val_name in enumerate(value_name_list):
+                        c_mean = cm_mean_hsv_orig_diff_dict[augmentation_set_number][
+                            i_ch, i_val, i_mn1, i_mn2
+                        ]
+                        ci_lower = cm_ci_lower_hsv_orig_diff_dict[augmentation_set_number][
+                            i_ch, i_val, i_mn1, i_mn2
+                        ]
+                        ci_upper = cm_ci_upper_hsv_orig_diff_dict[augmentation_set_number][
+                            i_ch, i_val, i_mn1, i_mn2
+                        ]
+                        if ((ci_lower > c_mean).all() or (ci_upper < c_mean).all()):
+                            print("OUT OF INTERVAL")
+                        c_delta = ci_upper - ci_lower
+                        #c_delta = c_delta[~np.isnan(c_delta)]
+                        print(
+                            f"aug={augmentation_set_number}, {module_name1}--{module_name2}"
+                            f", {channel_name}, {sens_val_name}: "
+                            f" delta={c_delta:.3f}"
+                        )
 

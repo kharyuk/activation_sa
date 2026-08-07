@@ -80,8 +80,8 @@ def extract_shp_values_func(values, group_indices):
     for i in range(len(group_indices)-1):
         ind0, ind1 = group_indices[i:i+2]
         rv.append(np.sum(values[ind0:ind1], axis=0))
-    rv = np.array(rv)
-    rv = np.clip(rv, 0., None)
+    rv = np.array(rv) 
+    rv = np.clip(rv, 0., None) # on the negativae values lowers the effect; clip before summing
     return rv
 
 def extract_si_values_func(values, which):
@@ -108,7 +108,8 @@ def get_conv2d_unit_values(
     dataset_part=None,
     slice_num=None,
     values_func=None,
-    shpv_normalize=True
+    shpv_normalize=True,
+    #post_values_func=None
 ):  
     loc_dict = paths_dict[values_key]
     if values_key == 'cs':
@@ -133,6 +134,8 @@ def get_conv2d_unit_values(
             values = values[slice_num]
     else:
         values = values.reshape(shape)
+    #if post_process_func is not None:
+    #    values = post_process_func(values)#, shape)
     return values
 
 

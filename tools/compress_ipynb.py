@@ -98,8 +98,8 @@ def compress_ipynb(
         nbformat.write(nb, f)
             
 if __name__ == "__main__":
-    nbfile_path_in: str = "2-2_VGG11_sensitivity_analysis.ipynb"
+    nbfile_path_in: str = "../notebook/imagenet/2-2_VGG11_sensitivity_analysis.ipynb"
     nbfile_path_out: str = "comp_2-2_VGG11_sensitivity_analysis.ipynb"
-    q: float = 0.95
+    q: float = 0.75
     compress_ipynb(nbfile_path_out, nbfile_path_in, q)
 

@@ -35,13 +35,14 @@ def compute_shpv_coef_var(x, eps=1e-5, log=True):
 
 
 # Additive property of shpv: summing up all variables related to every single transform/group variable
-def extract_shp_values_func(values, group_indices):
+def extract_shp_values_func(values, group_indices, clip=True):
     rv = []
     for i in range(len(group_indices)-1):
         ind0, ind1 = group_indices[i:i+2]
         rv.append(np.sum(values[ind0:ind1], axis=0))
     rv = np.array(rv)
-    rv = np.clip(rv, 0., None)
+    if clip:
+        rv = np.clip(rv, 0., None)
     return rv
 
 def hist_shp_values_func(values, group_indices):

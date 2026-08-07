@@ -1,0 +1,6 @@
+#!/bin/bash -l
+
+export CUDA_VISIBLE_DEVICES=""
+source activate activation_sense_vt
+
+python ../experiments/1.3_sobol.py --batch_size_activations_computing 100 --samples_per_class_train 732 --samples_per_class_valid 50 --data_dirname ../data/imagenet --activations_dirname ../results/ --model_dirname ../torch-models/ --model_filename vit_b_16-c867db91.pth --mkl_num_threads 5 --device cpu --recompute_activations 1 --remove_activations_hdf5 0 --desired_image_height 224 --desired_image_width 224 --network_name vit_b_16 --network_modules '["encoder.layers.encoder_layer_2", "encoder.layers.encoder_layer_5", "encoder.layers.encoder_layer_8", "encoder.layers.encoder_layer_11", "heads"]' --classification_layer_name heads --dataset imagenet --buffer_size_si_computing 200 --torch_seed 75 --numpy_seed 34678 --si_analyze_random_state 34456 --class_sampler_seed 9810 --subset_random_state_train 3905 --subset_random_state_valid 368 --dataset_part train+valid --Nsamples 65536 --Njobs_si_computing 4 --use_permutation_variable 1 --use_switch_variables 0 --compute_s2 1 --augset1_p 0.5 --augset2_p 0.5 --activations_fnm_prefix si_vit_b_16_imagenet_activations --values_fnm_prefix si_vit_b_16_imagenet_values --use_partition_variable 1 --n_proc 1 --augmentation_set_number 2

@@ -1,0 +1,6 @@
+#!/bin/bash -l
+
+export CUDA_VISIBLE_DEVICES=""
+source activate activation_sense_vt
+
+python ../experiments/1.4_shp_variance.py --batch_size_activations_computing 1000 --samples_per_class_train 732 --samples_per_class_valid 50 --data_dirname ../data/imagenet --activations_dirname ../results/ --model_dirname ../torch-models/ --model_filename maxvit_t-bc5ab103.pth --mkl_num_threads 8 --device cpu --recompute_activations 1 --remove_activations_hdf5 0 --desired_image_height 224 --desired_image_width 224 --network_name maxvit_t --network_modules '["blocks.0", "blocks.1", "blocks.2", "blocks.3", "classifier"]' --classification_layer_name classifier --dataset imagenet --libstdcpp_path /mnt/bulky/pkharyuk/apd/envs/activation_sense/lib/libstdc++.so.6 --buffer_size_tv_computing 1000 --torch_seed 2093 --numpy_seed 7156 --class_sampler_seed 871 --subset_random_state_train 2192 --subset_random_state_valid 9715 --dataset_part train+valid --Njobs_tv_computing 8 --augset1_p 0.5 --augset2_p 0.5 --activations_fnm_prefix shptv_maxvit_t_imagenet_activations --values_fnm_prefix shptv_maxvit_t_imagenet_values --Nsamples 262144 --permutation_random_seed 1396 --problem_sampler_seed 3868 --use_partition_variable 1 --use_permutation_variable 1 --class_selector_seed 8252 --partition_sampler_seed 1766 --augmentation_set_number 1
