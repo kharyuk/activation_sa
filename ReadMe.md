@@ -4,8 +4,9 @@ This repository contains source codes and Jupyter notebooks developed under the 
 - *P.Kharyuk, S.Matveev, I.Oseledets.* **Exploring specialization and sensitivity of convolutional neural networks in the context of simultaneous image augmentations.**
 
 Complementary computational results are available at corresponding Zenodo repositories:
-- https://zenodo.org/records/18097911 [Imagenet/ILSVRC]
-- https://zenodo.org/records/18098133 [Places365]
+- https://zenodo.org/records/18097911 [CNNs + Imagenet/ILSVRC]
+- https://zenodo.org/records/18098133 [CNNs + Places365]
+- https://zenodo.org/records/21284280 [Visual transformers + Imagenet/ILSVRC]
 
 ## Installation
 
@@ -48,6 +49,9 @@ Also these notebooks provides user with scriots to download the pretrained model
 - ```resnet18-5c106cde.pth``` (Imagenet; 46.8 MB)
 - ```alexnet_places365.pth.tar``` (Places365; 234.0 MB)
 - ```resnet18_places365.pth.tar``` (Places365; 45.5 MB)
+- ```vit_b_16-c867db91.pth``` (Imagenet; 346.3 MB)
+- ```swin_t-704ceda3.pth``` (Imagenet; 113.4 MB)
+- ```maxvit_t-bc5ab103.pth``` (Imagenet; 124.5 MB)
 
 
 ## Computing
@@ -78,11 +82,13 @@ Below we describe the notebooks relating them to the corresponding experiments:
 - **Experimental series 1 (sensitivity values)**:
     - ```2-X_<network_name>_sensitivity_analysis.ipynb```: configure experiments, generate ```sh``` files and plot the sensitivity values for the corresponding neural network model;
     - ```3-X_<network_name>_single_unit_sensitivity_analysis.ipynb```: plot these sensitivity values for every single unit separately;
-    - ```5-1_Correlation_analysis.ipynb```: checkpoint-wise correlation analysis of the SA variables;
-    - ```6_Discriminant_analysis.ipynb```: convolutional checkpoint-wise Linear Discriminant analysis of the SA variables using their maps as features;
+    - ```5-{1,3}_Correlation_analysis.ipynb```: checkpoint-wise correlation analysis of the SA variables;
+    - ```6-X_Discriminant_analysis.ipynb```: convolutional checkpoint-wise Linear Discriminant analysis of the SA variables using their maps as features;
+    - ```9-X_Error_analysis.ipynb```: error analysis based on the deviations from the mathematical properties of the original sensitivity values;
 - **Experimental series 2 (guided masking predictions)**:
     - ```7_Masked_predictions_analysis.ipynb```: configure experiments, generate ```sh``` files and display the results of guided masked predictions for neural network models;
-    - ```8_Single_class_prediction_analysis.ipynb```: analyze the sensitivity of the last classifying layers and relate it to the sensitivity of the whole network;
+    - ```8-1_Single_class_prediction_analysis.ipynb```: analyze the sensitivity of the last classifying layers and relate it to the sensitivity of the whole network;
+    - ```8-2_Threshold_selection.ipynb```: computing the statistical thresholds for the 8-1;
 - **Experimental series 3 (single channelled segments)**:
     - ```4-1_HSV_single_channel_single_unit_<network_name>.ipynb```: configure experiments, generate ```sh``` files and plot the sensitivity values of selected units for the corresponding neural network model (converting input to HSV, splitting by single channels, muliplexing them for the respective segments);
     - ```5-2_HSV_single_channel_correlation_analysis.ipynb```: segment-wise correlation analysis of the SA variables for the standalone segments;
@@ -114,6 +120,7 @@ Several details regarding these files are listed in ```test/Stats.md``` file.
     - ```src/correlation```: utilities for performing correlation analysis;
     - ```src/data_loader```: loading images as a torchvision dataset;
     - ```src/discriminant_analysis```: linear discriminant analysis for predicting SA variables by their sensitivity maps;
+    - ```src/error_analysis```: error analysis based on the deviations from the mathematical properties of the original sensitivity values;
     - ```src/image_transforms```: image augmentations considered in the study;
     - ```src/models```: loading pre-trained models;
     - ```src/prediction```: single-class sensitivity analysis and guided masking prediction sources (including correlations and HCA);
